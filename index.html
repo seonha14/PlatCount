@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Optimasi Cetak Plat</title>
+<!-- SheetJS for Excel export (auto-fallback ke CSV jika gagal) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.0/dist/xlsx.full.min.js"></script>
+<style>
+  :root{ --primary:#1e88e5; --bg:#f5f7fb; --card:#ffffff; --text:#1f2937; --muted:#6b7280; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);} 
+  .wrap{max-width:1024px;margin:24px auto;padding:16px}
+  .card{background:var(--card);border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.08);padding:20px}
+  h1{margin:0 0 16px;font-size:28px;color:var(--primary);text-align:center}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;margin-bottom:12px}
+  .input{display:flex;align-items:center;gap:8px}
+  .input label{font-size:13px;color:var(--muted)}
+  .input input{padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;min-width:160px;text-align:center;font-weight:600}
+  .iconbtn{border:0;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer;background:#e8f2fe;color:#1e66d0;display:flex;align-items:center;gap:6px}
+  .iconbtn.danger{background:#ffe8e8;color:#c62828}
+  .iconbtn.secondary{background:#eef2f7;color:#334155}
+  .primary{background:var(--primary);color:#fff;border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+  table{width:100%;border-collapse:collapse;margin-top:14px;overflow:hidden;border-radius:12px}
+  thead th{background:var(--primary);color:#fff;padding:10px;font-size:13px}
+  tbody td, tfoot td{border:1px solid #eef2f7;padding:8px;text-align:center}
+  tbody tr:nth-child(even){background:#fafbfd}
+  tbody td[contenteditable="true"]{background:#fff}
+  tbody input{width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;text-align:center}
+  tfoot td{padding:10px;font-weight:700;background:#f0f6ff}
+  .note{font-size:12px;color:var(--muted);margin-top:8px}
+  .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef6ff;color:#1e66d0;font-weight:700}
+  .f-ok{background:#e8f7ef}
+  .f-waste{background:#fff6e6}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Optimasi Cetak Plat</h1>
+
+      <!-- Toolbar bersih dan rapi -->
+      <div class="toolbar">
+        <div class="input">
+          <label for="kapasitas">Kapasitas plat (ΣC)</label>
+          <input type="number" id="kapasitas" value="61" min="1" />
+        </div>
+        <button class="iconbtn" id="btnAdd" title="Tambah Item">➕</button>
+        <button class="iconbtn danger" id="btnDel" title="Hapus Item">🗑</button>
+        <button class="iconbtn secondary" id="btnExport" title="Export ke Excel">📤 Export</button>
+      </div>
+
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th style="width:24%">Item</th>
+            <th style="width:18%">Kebutuhan (B)</th>
+            <th style="width:18%">Jumlah/Plat (C)</th>
+            <th style="width:18%">Total Cetak (D=C×E)</th>
+            <th style="width:10%">Plat (E)</th>
+            <th style="width:12%">Selisih (F=D−B)</th>
+          </tr>
+        </thead>
+        <tbody id="body">
+          <tr>
+            <td contenteditable="true">ITEM A</td>
+            <td contenteditable="true">50000</td>
+            <td class="c">0</td>
+            <td class="d">0</td>
+            <td class="e">0</td>
+            <td class="f">0</td>
+          </tr>
+          <tr>
+            <td contenteditable="true">ITEM B</td>
+            <td contenteditable="true">50000</td>
+            <td class="c">0</td>
+            <td class="d">0</td>
+            <td class="e">0</td>
+            <td class="f">0</td>
+          </tr>
+          <tr>
+            <td contenteditable="true">ITEM C</td>
+            <td contenteditable="true">25000</td>
+            <td class="c">0</td>
+            <td class="d">0</td>
+            <td class="e">0</td>
+            <td class="f">0</td>
+          </tr>
+          <tr>
+            <td contenteditable="true">ITEM D</td>
+            <td contenteditable="true">30000</td>
+            <td class="c">0</td>
+            <td class="d">0</td>
+            <td class="e">0</td>
+            <td class="f">0</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td style="text-align:right">TOTAL</td>
+            <td id="totB">0</td>
+            <td id="totC">0</td>
+            <td id="totD">0</td>
+            <td id="Efix" class="pill">0</td>
+            <td id="totF">0</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div class="note">Aturan: ∑C = kapasitas plat, Dᵢ = Cᵢ×E (E sama untuk semua item), Fᵢ = Dᵢ−Bᵢ ≥ 0. Algoritma memilih E minimal yang feasible dan meminimalkan total F.</div>
+
+      <div style="text-align:center;margin-top:16px">
+        <button class="primary" id="btnRun">⚡ Hitung Optimasi</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const bodyEl = document.getElementById('body');
+
+function parseNum(txt){
+  if(typeof txt === 'number') return txt;
+  if(!txt) return 0;
+  // hapus pemisah ribuan / spasi
+  txt = (''+txt).replace(/[^\d.-]/g,'');
+  return parseInt(txt,10) || 0;
+}
+
+function addRow(){
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td contenteditable="true">ITEM ${bodyEl.rows.length+1}</td>
+    <td contenteditable="true">0</td>
+    <td class="c">0</td>
+    <td class="d">0</td>
+    <td class="e">0</td>
+    <td class="f">0</td>`;
+  bodyEl.appendChild(tr);
+}
+function removeRow(){ if(bodyEl.rows.length>1) bodyEl.deleteRow(bodyEl.rows.length-1); }
+
+document.getElementById('btnAdd').addEventListener('click', addRow);
+
+document.getElementById('btnDel').addEventListener('click', removeRow);
+
+document.getElementById('btnRun').addEventListener('click', optimasi);
+
+document.getElementById('btnExport').addEventListener('click', exportExcel);
+
+function optimasi(){
+  const n = bodyEl.rows.length;
+  const S = parseNum(document.getElementById('kapasitas').value); // kapasitas (∑C)
+  const B = [], names=[];
+  for(let r=0;r<n;r++){
+    names.push(bodyEl.rows[r].cells[0].innerText.trim()||`ITEM ${r+1}`);
+    B.push(parseNum(bodyEl.rows[r].cells[1].innerText));
+  }
+  const sumB=B.reduce((a,b)=>a+b,0);
+  if(!S||S<=0){alert('Kapasitas plat harus > 0');return}
+  if(sumB===0){alert('Isi kebutuhan dulu');return}
+
+  // Cari E minimum yang feasible: sum(ceil(Bi/E)) <= S
+  let E=Math.max(1, Math.ceil(sumB/S));
+  const MAX_E = 10**7; // pengaman
+  let L=new Array(n).fill(0);
+  while(E<MAX_E){
+    let sumL=0; let ok=true;
+    for(let i=0;i<n;i++){ const li = Math.ceil(B[i]/E); L[i]=li; sumL+=li; }
+    if(sumL<=S){ break; } // feasible
+    E++;
+  }
+  // Jika tidak feasible (sangat kecil kemungkinannya), stop
+  if(E>=MAX_E){ alert('Gagal menemukan E feasible. Cek input.'); return; }
+
+  // Distribute sisa r = S - sumL (tambah 1 ke r item mana saja)
+  let sumL = L.reduce((a,b)=>a+b,0);
+  let r = S - sumL;
+  const C = [...L];
+  for(let i=0; i<n && r>0; i++, r--) C[i]++;
+
+  // Hitung D, F, dan total
+  let totC=0, totD=0, totF=0;
+  for(let i=0;i<n;i++){
+    const D=C[i]*E;
+    const F=D-B[i]; // harus >= 0
+    const row=bodyEl.rows[i];
+    row.querySelector('.c').textContent=C[i];
+    row.querySelector('.d').textContent=D.toLocaleString('id-ID');
+    row.querySelector('.e').textContent=E.toLocaleString('id-ID');
+    const fcell=row.querySelector('.f');
+    fcell.textContent=F.toLocaleString('id-ID');
+    fcell.classList.remove('f-ok','f-waste');
+    if(F===0) fcell.classList.add('f-ok'); else if(F>0) fcell.classList.add('f-waste');
+    totC+=C[i]; totD+=D; totF+=F;
+  }
+
+  // Tampilkan total
+  document.getElementById('totB').textContent=sumB.toLocaleString('id-ID');
+  document.getElementById('totC').textContent=totC;
+  document.getElementById('totD').textContent=totD.toLocaleString('id-ID');
+  document.getElementById('Efix').textContent=E.toLocaleString('id-ID');
+  document.getElementById('totF').textContent=totF.toLocaleString('id-ID');
+}
+
+function exportExcel(){
+  // Kumpulkan data tabel ke array-of-arrays
+  const header=["Item","Kebutuhan (B)","Jumlah/Plat (C)","Total Cetak (D)","Plat (E)","Selisih (F)"];
+  const data=[header];
+  const n=bodyEl.rows.length;
+  for(let r=0;r<n;r++){
+    const row=bodyEl.rows[r];
+    const name=row.cells[0].innerText.trim();
+    const B=parseNum(row.cells[1].innerText);
+    const C=parseNum(row.querySelector('.c').textContent);
+    const D=parseNum(row.querySelector('.d').textContent);
+    const E=parseNum(row.querySelector('.e').textContent);
+    const F=parseNum(row.querySelector('.f').textContent);
+    data.push([name,B,C,D,E,F]);
+  }
+  // Baris total
+  const totB=document.getElementById('totB').textContent.replace(/\./g,'').replace(/,/g,'');
+  const totC=document.getElementById('totC').textContent;
+  const totD=document.getElementById('totD').textContent.replace(/\./g,'').replace(/,/g,'');
+  const Efix=document.getElementById('Efix').textContent.replace(/\./g,'').replace(/,/g,'');
+  const totF=document.getElementById('totF').textContent.replace(/\./g,'').replace(/,/g,'');
+  data.push(["TOTAL", parseInt(totB)||0, parseInt(totC)||0, parseInt(totD)||0, parseInt(Efix)||0, parseInt(totF)||0]);
+
+  try{
+    const wb=XLSX.utils.book_new();
+    const ws=XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Optimasi');
+    // Tulis sebagai blob biar nama file nggak jadi .bin di beberapa HP
+    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    const blob = new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='optimasi_cetak_plat.xlsx';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
+  }catch(err){
+    // Fallback ke CSV kalau environment nggak support download xlsx
+    const csv = data.map(r=>r.join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='optimasi_cetak_plat.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
+  }
+}
+</script>
+</body>
+</html>
