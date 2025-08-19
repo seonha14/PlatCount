@@ -7,6 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.0/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     :root {
       --bg-light: #f3f4f6;
@@ -457,7 +458,7 @@ function getTableData() {
     return { header, data, footer };
 }
 
-// --- FUNGSI EXCEL DIPERBAIKI ---
+// --- FUNGSI EXCEL MENGGUNAKAN FILESAVER.JS ---
 function exportXlsx(){
   try {
     const { header, data, footer } = getTableData();
@@ -466,15 +467,11 @@ function exportXlsx(){
     const ws = XLSX.utils.aoa_to_sheet(sheetData);
     XLSX.utils.book_append_sheet(wb, ws, 'Optimasi');
     
-    // Metode download yang lebih kompatibel
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'optimasi_cetak_plat.xlsx';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    
+    // Menggunakan FileSaver.js untuk download yang lebih handal
+    saveAs(blob, 'optimasi_cetak_plat.xlsx');
 
   } catch (err) {
     alert("Gagal mengekspor ke Excel. Coba lagi.");
@@ -482,7 +479,6 @@ function exportXlsx(){
   }
 }
 
-// --- FUNGSI PDF DIPERBARUI ---
 function exportPdf() {
     const { header, data, footer } = getTableData();
     const { jsPDF } = window.jspdf;
