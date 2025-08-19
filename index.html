@@ -1,129 +1,361 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Optimasi Cetak Plat</title>
-<!-- SheetJS for Excel export (auto-fallback ke CSV jika gagal) -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.0/dist/xlsx.full.min.js"></script>
-<style>
-  :root{ --primary:#1e88e5; --bg:#f5f7fb; --card:#ffffff; --text:#1f2937; --muted:#6b7280; }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);} 
-  .wrap{max-width:1024px;margin:24px auto;padding:16px}
-  .card{background:var(--card);border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.08);padding:20px}
-  h1{margin:0 0 16px;font-size:28px;color:var(--primary);text-align:center}
-  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;margin-bottom:12px}
-  .input{display:flex;align-items:center;gap:8px}
-  .input label{font-size:13px;color:var(--muted)}
-  .input input{padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;min-width:160px;text-align:center;font-weight:600}
-  .iconbtn{border:0;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer;background:#e8f2fe;color:#1e66d0;display:flex;align-items:center;gap:6px}
-  .iconbtn.danger{background:#ffe8e8;color:#c62828}
-  .iconbtn.secondary{background:#eef2f7;color:#334155}
-  .primary{background:var(--primary);color:#fff;border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
-  table{width:100%;border-collapse:collapse;margin-top:14px;overflow:hidden;border-radius:12px}
-  thead th{background:var(--primary);color:#fff;padding:10px;font-size:13px}
-  tbody td, tfoot td{border:1px solid #eef2f7;padding:8px;text-align:center}
-  tbody tr:nth-child(even){background:#fafbfd}
-  tbody td[contenteditable="true"]{background:#fff}
-  tbody input{width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;text-align:center}
-  tfoot td{padding:10px;font-weight:700;background:#f0f6ff}
-  .note{font-size:12px;color:var(--muted);margin-top:8px}
-  .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef6ff;color:#1e66d0;font-weight:700}
-  .f-ok{background:#e8f7ef}
-  .f-waste{background:#fff6e6}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Optimasi Cetak Plat</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.0/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    :root {
+      --bg-light: #f3f4f6;
+      --bg-dark: #121212;
+      --card-light: #ffffff;
+      --card-dark: #1e1e1e;
+      --text-light: #111827;
+      --text-dark: #e5e7eb;
+      --subtext-light: #6b7280;
+      --subtext-dark: #9ca3af;
+      --btn-bg: linear-gradient(135deg, #ff6ec4, #7873f5);
+      --btn-text: #ffffff;
+      --border-light: #e5e7eb;
+      --border-dark: #374151;
+      --primary-color: #7873f5;
+    }
+    
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-light);
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark {
+      background: var(--bg-dark);
+      color: var(--text-dark);
+    }
+    
+    .wrap {
+      max-width: 1024px;
+      margin: 24px auto;
+      padding: 16px;
+    }
+
+    .card {
+      background: var(--card-light);
+      border-radius: 15px;
+      padding: 24px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    body.dark .card {
+      background: var(--card-dark);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    
+    h1 {
+      margin: 0 0 24px;
+      font-size: 28px;
+      text-align: center;
+      font-weight: 700;
+    }
+    
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 20px;
+    }
+    body.dark .toolbar { border-color: var(--border-dark); }
+    
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-light);
+      padding: 8px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border-light);
+    }
+    body.dark .input-group {
+        background: var(--bg-dark);
+        border-color: var(--border-dark);
+    }
+
+    .input-group label {
+      font-size: 14px;
+      color: var(--subtext-light);
+      font-weight: 500;
+    }
+    body.dark .input-group label { color: var(--subtext-dark); }
+
+    .input-group input {
+      border: none;
+      outline: none;
+      background: transparent;
+      color: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      width: 80px;
+      text-align: center;
+    }
+    
+    .actions-group { display: flex; gap: 8px; }
+
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid var(--border-light);
+      color: var(--subtext-light);
+      border-radius: 10px;
+      cursor: pointer;
+      background: var(--card-light);
+      font-weight: 500;
+      transition: all 0.2s;
+      font-size: 14px;
+    }
+    body.dark .btn {
+      background: var(--card-dark);
+      border-color: var(--border-dark);
+      color: var(--subtext-dark);
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+    .btn.danger:hover {
+        border-color: #ef4444;
+        color: #ef4444;
+    }
+
+    .btn-primary {
+      padding: 12px 24px;
+      border-radius: 10px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      text-decoration: none;
+      font-weight: 700;
+      transition: transform 0.2s, box-shadow 0.2s;
+      font-size: 1rem;
+      box-shadow: 0 2px 10px rgba(120, 115, 245, 0.3);
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(120, 115, 245, 0.5);
+    }
+    
+    .table-container {
+      overflow-x: auto;
+      padding-bottom: 5px;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      min-width: 600px;
+    }
+    
+    thead th {
+      background: var(--bg-light);
+      color: var(--subtext-light);
+      padding: 12px 15px;
+      font-size: 13px;
+      text-align: right;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-light);
+    }
+    body.dark thead th {
+        background: var(--bg-dark);
+        color: var(--subtext-dark);
+        border-color: var(--border-dark);
+    }
+    
+    tbody td, tfoot td {
+      border-bottom: 1px solid var(--border-light);
+      padding: 12px 15px;
+      text-align: right;
+      font-family: monospace, sans-serif;
+      font-size: 14px;
+    }
+    body.dark tbody td, body.dark tfoot td { border-color: var(--border-dark); }
+    
+    td:first-child, th:first-child {
+      text-align: left;
+      font-family: inherit;
+      font-weight: 500;
+    }
+    
+    tbody tr:nth-child(even) { background: #fafafa; }
+    body.dark tbody tr:nth-child(even) { background: #1a1a1a; }
+    
+    tbody td[contenteditable="true"]:hover {
+        background: rgba(120, 115, 245, 0.1);
+        cursor: pointer;
+    }
+
+    tfoot td {
+      font-weight: 700;
+      background: var(--bg-light);
+    }
+    body.dark tfoot td { background: var(--bg-dark); }
+    
+    .note { font-size: 12px; color: var(--subtext-light); margin-top: 16px; text-align: center; }
+    body.dark .note { color: var(--subtext-dark); }
+
+    .pill {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--primary-color);
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    
+    .f-ok { color: #10b981; }
+    .f-waste { color: #f59e0b; }
+
+    footer {
+        text-align: center;
+        margin-top: 24px;
+        font-size: 0.9rem;
+        color: var(--subtext-light);
+    }
+    body.dark footer { color: var(--subtext-dark); }
+
+    .theme-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      cursor: pointer;
+      font-size: 24px;
+      background: var(--card-light);
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      border: 1px solid var(--border-light);
+    }
+    body.dark .theme-toggle { 
+        background: var(--card-dark); 
+        border-color: var(--border-dark);
+    }
+
+  </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
       <h1>Optimasi Cetak Plat</h1>
 
-      <!-- Toolbar bersih dan rapi -->
       <div class="toolbar">
-        <div class="input">
-          <label for="kapasitas">Kapasitas plat (ΣC)</label>
+        <div class="input-group">
+          <label for="kapasitas">Kapasitas Plat (ΣC)</label>
           <input type="number" id="kapasitas" value="61" min="1" />
         </div>
-        <button class="iconbtn" id="btnAdd" title="Tambah Item">➕</button>
-        <button class="iconbtn danger" id="btnDel" title="Hapus Item">🗑</button>
-        <button class="iconbtn secondary" id="btnExport" title="Export ke Excel">📤 Export</button>
+        <div class="actions-group">
+            <button class="btn" id="btnAdd" title="Tambah Item">➕ Tambah</button>
+            <button class="btn danger" id="btnDel" title="Hapus Item">🗑 Hapus</button>
+            <button class="btn" id="btnExportPdf" title="Export ke PDF">🖨️ PDF</button>
+            <button class="btn" id="btnExportXlsx" title="Export ke Excel">📤 Excel</button>
+        </div>
       </div>
 
-      <table id="tbl">
-        <thead>
-          <tr>
-            <th style="width:24%">Item</th>
-            <th style="width:18%">Kebutuhan (B)</th>
-            <th style="width:18%">Jumlah/Plat (C)</th>
-            <th style="width:18%">Total Cetak (D=C×E)</th>
-            <th style="width:10%">Plat (E)</th>
-            <th style="width:12%">Selisih (F=D−B)</th>
-          </tr>
-        </thead>
-        <tbody id="body">
-          <tr>
-            <td contenteditable="true">ITEM A</td>
-            <td contenteditable="true">50000</td>
-            <td class="c">0</td>
-            <td class="d">0</td>
-            <td class="e">0</td>
-            <td class="f">0</td>
-          </tr>
-          <tr>
-            <td contenteditable="true">ITEM B</td>
-            <td contenteditable="true">50000</td>
-            <td class="c">0</td>
-            <td class="d">0</td>
-            <td class="e">0</td>
-            <td class="f">0</td>
-          </tr>
-          <tr>
-            <td contenteditable="true">ITEM C</td>
-            <td contenteditable="true">25000</td>
-            <td class="c">0</td>
-            <td class="d">0</td>
-            <td class="e">0</td>
-            <td class="f">0</td>
-          </tr>
-          <tr>
-            <td contenteditable="true">ITEM D</td>
-            <td contenteditable="true">30000</td>
-            <td class="c">0</td>
-            <td class="d">0</td>
-            <td class="e">0</td>
-            <td class="f">0</td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr>
-            <td style="text-align:right">TOTAL</td>
-            <td id="totB">0</td>
-            <td id="totC">0</td>
-            <td id="totD">0</td>
-            <td id="Efix" class="pill">0</td>
-            <td id="totF">0</td>
-          </tr>
-        </tfoot>
-      </table>
+      <div class="table-container">
+          <table id="tbl">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Kebutuhan (B)</th>
+                <th>Jumlah/Plat (C)</th>
+                <th>Total Cetak (D=C×E)</th>
+                <th>Plat (E)</th>
+                <th>Selisih (F=D−B)</th>
+              </tr>
+            </thead>
+            <tbody id="body">
+              <tr>
+                <td contenteditable="true">ITEM A</td>
+                <td contenteditable="true">50.000</td>
+                <td class="c">0</td>
+                <td class="d">0</td>
+                <td class="e">0</td>
+                <td class="f">0</td>
+              </tr>
+              <tr>
+                <td contenteditable="true">ITEM B</td>
+                <td contenteditable="true">50.000</td>
+                <td class="c">0</td>
+                <td class="d">0</td>
+                <td class="e">0</td>
+                <td class="f">0</td>
+              </tr>
+              <tr>
+                <td contenteditable="true">ITEM C</td>
+                <td contenteditable="true">25.000</td>
+                <td class="c">0</td>
+                <td class="d">0</td>
+                <td class="e">0</td>
+                <td class="f">0</td>
+              </tr>
+              <tr>
+                <td contenteditable="true">ITEM D</td>
+                <td contenteditable="true">30.000</td>
+                <td class="c">0</td>
+                <td class="d">0</td>
+                <td class="e">0</td>
+                <td class="f">0</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td style="text-align:right">TOTAL</td>
+                <td id="totB">0</td>
+                <td id="totC">0</td>
+                <td id="totD">0</td>
+                <td><span id="Efix" class="pill">0</span></td>
+                <td id="totF">0</td>
+              </tr>
+            </tfoot>
+          </table>
+      </div>
 
       <div class="note">Aturan: ∑C = kapasitas plat, Dᵢ = Cᵢ×E (E sama untuk semua item), Fᵢ = Dᵢ−Bᵢ ≥ 0. Algoritma memilih E minimal yang feasible dan meminimalkan total F.</div>
 
-      <div style="text-align:center;margin-top:16px">
-        <button class="primary" id="btnRun">⚡ Hitung Optimasi</button>
+      <div style="text-align:center;margin-top:24px">
+        <button class="btn-primary" id="btnRun">⚡ Hitung Optimasi</button>
       </div>
+      
+      <footer>Made with love by sanha</footer>
     </div>
   </div>
+  
+  <div class="theme-toggle" id="themeToggle">🌙</div>
 
 <script>
 const bodyEl = document.getElementById('body');
+const themeToggle = document.getElementById("themeToggle");
 
+// --- FUNGSI PARSING ANGKA YANG DIPERBAIKI ---
 function parseNum(txt){
   if(typeof txt === 'number') return txt;
   if(!txt) return 0;
-  // hapus pemisah ribuan / spasi
-  txt = (''+txt).replace(/[^\d.-]/g,'');
-  return parseInt(txt,10) || 0;
+  // Hapus semua karakter kecuali digit dan tanda minus
+  const cleanedText = (''+txt).replace(/[^\d-]/g, '');
+  return parseInt(cleanedText, 10) || 0;
 }
 
 function addRow(){
@@ -138,17 +370,9 @@ function addRow(){
 }
 function removeRow(){ if(bodyEl.rows.length>1) bodyEl.deleteRow(bodyEl.rows.length-1); }
 
-document.getElementById('btnAdd').addEventListener('click', addRow);
-
-document.getElementById('btnDel').addEventListener('click', removeRow);
-
-document.getElementById('btnRun').addEventListener('click', optimasi);
-
-document.getElementById('btnExport').addEventListener('click', exportExcel);
-
 function optimasi(){
   const n = bodyEl.rows.length;
-  const S = parseNum(document.getElementById('kapasitas').value); // kapasitas (∑C)
+  const S = parseNum(document.getElementById('kapasitas').value);
   const B = [], names=[];
   for(let r=0;r<n;r++){
     names.push(bodyEl.rows[r].cells[0].innerText.trim()||`ITEM ${r+1}`);
@@ -158,32 +382,28 @@ function optimasi(){
   if(!S||S<=0){alert('Kapasitas plat harus > 0');return}
   if(sumB===0){alert('Isi kebutuhan dulu');return}
 
-  // Cari E minimum yang feasible: sum(ceil(Bi/E)) <= S
   let E=Math.max(1, Math.ceil(sumB/S));
-  const MAX_E = 10**7; // pengaman
+  const MAX_E = 10**7;
   let L=new Array(n).fill(0);
   while(E<MAX_E){
-    let sumL=0; let ok=true;
+    let sumL=0;
     for(let i=0;i<n;i++){ const li = Math.ceil(B[i]/E); L[i]=li; sumL+=li; }
-    if(sumL<=S){ break; } // feasible
+    if(sumL<=S){ break; }
     E++;
   }
-  // Jika tidak feasible (sangat kecil kemungkinannya), stop
   if(E>=MAX_E){ alert('Gagal menemukan E feasible. Cek input.'); return; }
 
-  // Distribute sisa r = S - sumL (tambah 1 ke r item mana saja)
   let sumL = L.reduce((a,b)=>a+b,0);
   let r = S - sumL;
   const C = [...L];
   for(let i=0; i<n && r>0; i++, r--) C[i]++;
 
-  // Hitung D, F, dan total
   let totC=0, totD=0, totF=0;
   for(let i=0;i<n;i++){
     const D=C[i]*E;
-    const F=D-B[i]; // harus >= 0
+    const F=D-B[i];
     const row=bodyEl.rows[i];
-    row.querySelector('.c').textContent=C[i];
+    row.querySelector('.c').textContent=C[i].toLocaleString('id-ID');
     row.querySelector('.d').textContent=D.toLocaleString('id-ID');
     row.querySelector('.e').textContent=E.toLocaleString('id-ID');
     const fcell=row.querySelector('.f');
@@ -193,60 +413,108 @@ function optimasi(){
     totC+=C[i]; totD+=D; totF+=F;
   }
 
-  // Tampilkan total
   document.getElementById('totB').textContent=sumB.toLocaleString('id-ID');
-  document.getElementById('totC').textContent=totC;
+  document.getElementById('totC').textContent=totC.toLocaleString('id-ID');
   document.getElementById('totD').textContent=totD.toLocaleString('id-ID');
   document.getElementById('Efix').textContent=E.toLocaleString('id-ID');
   document.getElementById('totF').textContent=totF.toLocaleString('id-ID');
 }
 
-function exportExcel(){
-  // Kumpulkan data tabel ke array-of-arrays
-  const header=["Item","Kebutuhan (B)","Jumlah/Plat (C)","Total Cetak (D)","Plat (E)","Selisih (F)"];
-  const data=[header];
-  const n=bodyEl.rows.length;
-  for(let r=0;r<n;r++){
-    const row=bodyEl.rows[r];
-    const name=row.cells[0].innerText.trim();
-    const B=parseNum(row.cells[1].innerText);
-    const C=parseNum(row.querySelector('.c').textContent);
-    const D=parseNum(row.querySelector('.d').textContent);
-    const E=parseNum(row.querySelector('.e').textContent);
-    const F=parseNum(row.querySelector('.f').textContent);
-    data.push([name,B,C,D,E,F]);
-  }
-  // Baris total
-  const totB=document.getElementById('totB').textContent.replace(/\./g,'').replace(/,/g,'');
-  const totC=document.getElementById('totC').textContent;
-  const totD=document.getElementById('totD').textContent.replace(/\./g,'').replace(/,/g,'');
-  const Efix=document.getElementById('Efix').textContent.replace(/\./g,'').replace(/,/g,'');
-  const totF=document.getElementById('totF').textContent.replace(/\./g,'').replace(/,/g,'');
-  data.push(["TOTAL", parseInt(totB)||0, parseInt(totC)||0, parseInt(totD)||0, parseInt(Efix)||0, parseInt(totF)||0]);
+// --- FUNGSI PENGUMPUL DATA UNTUK EXPORT ---
+function getTableData() {
+    const header=["Item","Kebutuhan (B)","Jumlah/Plat (C)","Total Cetak (D)","Plat (E)","Selisih (F)"];
+    const data=[];
+    const n=bodyEl.rows.length;
+    for(let r=0;r<n;r++){
+      const row=bodyEl.rows[r];
+      data.push([
+        row.cells[0].innerText.trim(),
+        parseNum(row.cells[1].innerText),
+        parseNum(row.querySelector('.c').textContent),
+        parseNum(row.querySelector('.d').textContent),
+        parseNum(row.querySelector('.e').textContent),
+        parseNum(row.querySelector('.f').textContent)
+      ]);
+    }
+    const footer = [
+      "TOTAL",
+      parseNum(document.getElementById('totB').textContent),
+      parseNum(document.getElementById('totC').textContent),
+      parseNum(document.getElementById('totD').textContent),
+      parseNum(document.getElementById('Efix').textContent),
+      parseNum(document.getElementById('totF').textContent)
+    ];
+    return { header, data, footer };
+}
+
+
+function exportXlsx(){
+  const { header, data, footer } = getTableData();
+  const sheetData = [header, ...data, footer];
 
   try{
     const wb=XLSX.utils.book_new();
-    const ws=XLSX.utils.aoa_to_sheet(data);
+    // Gunakan aoa_to_sheet agar tipe data (angka) tetap terjaga
+    const ws=XLSX.utils.aoa_to_sheet(sheetData);
     XLSX.utils.book_append_sheet(wb, ws, 'Optimasi');
-    // Tulis sebagai blob biar nama file nggak jadi .bin di beberapa HP
-    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-    const blob = new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download='optimasi_cetak_plat.xlsx';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
-  }catch(err){
-    // Fallback ke CSV kalau environment nggak support download xlsx
-    const csv = data.map(r=>r.join(',')).join('\n');
-    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download='optimasi_cetak_plat.csv';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
+    XLSX.writeFile(wb, 'optimasi_cetak_plat.xlsx');
+  } catch(err){
+    alert("Gagal mengekspor ke Excel. Coba lagi.");
+    console.error(err);
   }
 }
+
+function exportPdf() {
+    const { header, data, footer } = getTableData();
+    const { jsPDF } = window.jspdf;
+    
+    // Inisialisasi dokumen PDF
+    const doc = new jsPDF();
+    
+    // Menambahkan judul
+    doc.setFontSize(18);
+    doc.text('Hasil Optimasi Cetak Plat', 14, 22);
+    
+    // Menggunakan autoTable untuk membuat tabel
+    doc.autoTable({
+        head: [header],
+        body: data,
+        foot: [footer],
+        startY: 30,
+        theme: 'grid',
+        headStyles: { fillColor: [120, 115, 245] }, // Warna ungu dari tema
+        footStyles: { fontStyle: 'bold' }
+    });
+    
+    doc.save('optimasi_cetak_plat.pdf');
+}
+
+
+// --- FUNGSI TEMA ---
+function toggleTheme() {
+    const isDark = document.body.classList.toggle("dark");
+    themeToggle.textContent = isDark ? "☀️" : "🌙";
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+}
+
+// Event Listeners
+document.getElementById('btnAdd').addEventListener('click', addRow);
+document.getElementById('btnDel').addEventListener('click', removeRow);
+document.getElementById('btnRun').addEventListener('click', optimasi);
+document.getElementById('btnExportXlsx').addEventListener('click', exportXlsx);
+document.getElementById('btnExportPdf').addEventListener('click', exportPdf);
+themeToggle.addEventListener("click", toggleTheme);
+
+// Cek tema saat pertama kali load
+(function () {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark") {
+        document.body.classList.add("dark");
+        themeToggle.textContent = "☀️";
+    } else {
+        themeToggle.textContent = "🌙";
+    }
+})();
 </script>
 </body>
 </html>
